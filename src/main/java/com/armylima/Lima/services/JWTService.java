@@ -28,6 +28,9 @@ public class JWTService {
         System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 }
     private SecretKey getSigningKey() {
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println("!!! JWT SECRET LOADED: " + secretString + " !!!");
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         byte[] keyBytes = secretString.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
@@ -59,6 +62,9 @@ public class JWTService {
     }
 
     public String generateToken(UserDetails userDetails) {
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println("!!! JWT SECRET LOADED: " + secretString + " !!!");
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .claim("roles", userDetails.getAuthorities())
