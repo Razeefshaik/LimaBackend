@@ -17,14 +17,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+
 @Component
 public class JWTFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private UserDetailsService userDetailsService;
+    private final JWTService jwtService;
+    private final UserDetailsService userDetailsService;
 
-    @Autowired
-    private JWTService jwtService;
+    public JWTFilter(JWTService jwtService, UserDetailsService userDetailsService) {
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -43,30 +46,41 @@ public class JWTFilter extends OncePerRequestFilter {
 
         jwt = authHeader.substring(7);
 
-        // --- THIS IS THE FIX ---
-        // We wrap the token extraction in a try-catch block to handle bad tokens.
         try {
             username = jwtService.extractUsername(jwt);
         } catch (Exception e) {
-            // If the token is malformed (e.g., "null"), it will fail here.
-            // We simply continue the filter chain without authenticating.
             filterChain.doFilter(request, response);
             return;
         }
-        // --- END OF FIX ---
+
+        // --- TEMPORARY DEBUG LOGGING ---
+        System.out.println("==============================================");
+        System.out.println("--- JWT FILTER DEBUG ---");
+        System.out.println("REQUEST URI: " + request.getRequestURI());
+        System.out.println("EXTRACTED USERNAME: " + username);
+        // --- END OF DEBUG LOGGING ---
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+
+            // --- MORE DEBUG LOGGING ---
+            System.out.println("USER DETAILS FOUND: " + userDetails.getUsername());
+            System.out.println("USER AUTHORITIES FROM DB: " + userDetails.getAuthorities()); // This is the most important line
+            System.out.println("IS TOKEN VALID: " + jwtService.validateToken(jwt, userDetails));
+            // --- END OF MORE DEBUG LOGGING ---
 
             if (jwtService.validateToken(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                System.out.println("--- AUTHENTICATION SET SUCCESSFULLY ---");
             }
         }
-
+        System.out.println("==============================================");
         filterChain.doFilter(request, response);
     }
 }
